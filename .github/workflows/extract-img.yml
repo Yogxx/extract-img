@@ -84,10 +84,12 @@ jobs:
           sudo unxz file.img.xz
         fi
         los=$(sudo losetup -fP --show file.img)
-        sudo mount ${los}p2 rootfs
-        (cd rootfs && sudo rm -R lib/modules && sudo rm -R lib/firmware && sudo tar cfz /workdir/openwrt/img/${{ inputs.rename_rootfs }}.tar.gz *)
-        echo "::set-output name=status::success"
-        
+        # mount rootfs read-only karena squashfs tidak bisa RW
+        sudo mount -o ro ${los}p2 rootfs
+        # langsung exclude folder modules & firmware saat tar
+        (cd rootfs && sudo tar --exclude=lib/modules --exclude=lib/firmware -czf /workdir/openwrt/img/${{ inputs.rename_rootfs }}.tar.gz .)
+        echo "status=success" >> $GITHUB_OUTPUT
+
     - name: Check space usage
       if: (!cancelled())
       run: df -hT
